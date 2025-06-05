@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .weather-widget {
+      max-width: 300px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      padding: 24px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      text-align: center;
+    }
+    .weather-location {
+      font-size: 1.25em;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .weather-temp {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+    .weather-desc {
+      font-size: 1em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .weather-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 8px;
+    }
+    .weather-error {
+      color: #d32f2f;
+      font-size: 1em;
+      margin-top: 12px;
+    }
+    .weather-input {
+      margin-bottom: 12px;
+    }
+    .weather-input input {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      width: 70%;
+      margin-right: 4px;
+    }
+    .weather-input button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: none;
+      background: #1976d2;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .weather-input button:hover {
+      background: #1565c0;
+    }
+  </style>
+</head>
+<body>
+  <div class="weather-widget" id="weatherWidget">
+    <form class="weather-input" id="weatherForm">
+      <input type="text" id="cityInput" placeholder="Enter city" required />
+      <button type="submit">Get Weather</button>
+    </form>
+    <div id="weatherDisplay" style="display: none;">
+      <img class="weather-icon" id="weatherIcon" src="" alt="Weather Icon">
+      <div class="weather-location" id="weatherLocation"></div>
+      <div class="weather-temp" id="weatherTemp"></div>
+      <div class="weather-desc" id="weatherDesc"></div>
+    </div>
+    <div class="weather-error" id="weatherError"></div>
+  </div>
+  <script>
+    // Replace with your OpenWeatherMap API key
+    const API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+
+    const form = document.getElementById('weatherForm');
+    const cityInput = document.getElementById('cityInput');
+    const display = document.getElementById('weatherDisplay');
+    const icon = document.getElementById('weatherIcon');
+    const locationEl = document.getElementById('weatherLocation');
+    const tempEl = document.getElementById('weatherTemp');
+    const descEl = document.getElementById('weatherDesc');
+    const errorEl = document.getElementById('weatherError');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const city = cityInput.value.trim();
+      if (city) {
+        fetchWeather(city);
+      }
+    });
+
+    async function fetchWeather(city) {
+      errorEl.textContent = '';
+      display.style.display = 'none';
+      try {
+        const resp = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&appid=${API_KEY}`
+        );
+        if (!resp.ok) {
+          throw new Error('City not found');
+        }
+        const data = await resp.json();
+        const { name, sys, main, weather } = data;
+        locationEl.textContent = `${name}, ${sys.country}`;
+        tempEl.textContent = `${Math.round(main.temp)}°C`;
+        descEl.textContent = weather[0].description.replace(/^\w/, c => c.toUpperCase());
+        icon.src = `https://openweathermap.org/img/wn/${weather[0].icon}@2x.png`;
+        icon.alt = weather[0].description;
+        display.style.display = 'block';
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    // Auto-detect city by IP and fetch weather on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Get geolocation info based on IP (using ip-api.com)
+        const geoResp = await fetch('https://ip-api.com/json');
+        const geoData = await geoResp.json();
+        if (geoData && geoData.city) {
+          cityInput.value = geoData.city;
+          fetchWeather(geoData.city);
+        }
+      } catch (err) {
+        // Fail silently, allow user input
+      }
+    });
+  </script>
+</body>
+</html>
